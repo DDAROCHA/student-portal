@@ -6,6 +6,7 @@ interface Student {
   id: number;
   name: string;
   email: string;
+  avatar_url?: string;
 }
 
 export const StudentsList = () => {
@@ -20,6 +21,8 @@ export const StudentsList = () => {
 
   const [courses, setCourses] = useState<any[]>([]);
   const [studentCourses, setStudentCourses] = useState<{ [key: number]: any[] }>({});
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
     getCourses().then(setCourses);
@@ -49,15 +52,31 @@ export const StudentsList = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    let avatarUrl = null;
+
+    console.log('Selected file:', selectedFile);
+
+    if (selectedFile) {
+      avatarUrl = await uploadToS3(selectedFile);
+    }
+
+    console.log('Avatar URL:', avatarUrl);
+
     await fetch('http://localhost:3001/students', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email }),
+      body: JSON.stringify({
+        name,
+        email,
+        avatar_url: avatarUrl,
+      }),
     });
 
     setName('');
     setEmail('');
-    fetchStudents(); // 🔥 refresca la lista
+    setSelectedFile(null);
+
+    fetchStudents();
   };
 
   const handleDelete = async (id: number) => {
@@ -84,6 +103,24 @@ export const StudentsList = () => {
     fetchStudents();
   };
 
+  const uploadToS3 = async (file: File) => {
+    const res = await fetch(
+      `http://localhost:3001/students/upload-url?fileName=${file.name}&fileType=${file.type}`
+    );
+
+    const { uploadUrl, fileUrl } = await res.json();
+
+    await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': file.type,
+      },
+      body: file,
+    });
+
+    return fileUrl;
+  };
+
   if (loading) return <p>Loading...</p>;
 
   //console.log('Courses state:', courses);
@@ -104,6 +141,15 @@ export const StudentsList = () => {
           placeholder="Email"
           value={email}
           onChange={e => setEmail(e.target.value)}
+        />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={e => {
+            if (e.target.files) {
+              setSelectedFile(e.target.files[0]);
+            }
+          }}
         />
         <button type="submit">Add Student</button>
       </form>
@@ -131,6 +177,19 @@ export const StudentsList = () => {
                   Edit
                 </button>
                 <button onClick={() => handleDelete(s.id)}>Delete</button>
+                {s.avatar_url && (
+                  <img
+                    src={s.avatar_url}
+                    alt={s.name}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      marginRight: 10,
+                    }}
+                  />
+                )}
               </>
             )}
 
