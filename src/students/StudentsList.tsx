@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { getCourses, getStudentCourses, assignCourseToStudent } from '../services/courseService';
+import { ParticlesBackground } from '../components/ParticlesBackground';
 
 interface Student {
   id: number;
@@ -136,8 +137,11 @@ export const StudentsList = () => {
   //console.log('Courses state:', courses);
 
   return (
-    <div>
-      <h2>Students</h2>
+    <div className="relative z-10 min-h-screen text-white p-10">
+      <ParticlesBackground />
+      <h1 className="text-5xl font-bold mb-10 text-green-400 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]">
+        Students
+      </h1>
 
       <form onSubmit={handleSubmit}>
         <input
