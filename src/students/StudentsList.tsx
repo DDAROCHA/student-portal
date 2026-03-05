@@ -24,6 +24,11 @@ export const StudentsList = () => {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
   useEffect(() => {
     getCourses().then(setCourses);
   }, []);
@@ -37,17 +42,18 @@ export const StudentsList = () => {
   };
 
   const fetchStudents = () => {
-    fetch('http://localhost:3001/students')
+    fetch(`http://localhost:3001/students?page=${page}&limit=5`)
       .then(res => res.json())
       .then(data => {
         setStudents(data.students);
+        setTotalPages(data.totalPages);
         setLoading(false);
       });
   };
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+  }, [page]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +81,10 @@ export const StudentsList = () => {
     setName('');
     setEmail('');
     setSelectedFile(null);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
 
     fetchStudents();
   };
@@ -142,7 +152,9 @@ export const StudentsList = () => {
           value={email}
           onChange={e => setEmail(e.target.value)}
         />
+
         <input
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           onChange={e => {
@@ -227,6 +239,20 @@ export const StudentsList = () => {
           </li>
         ))}
       </ul>
+
+      <div style={{ marginTop: '20px' }}>
+        <button disabled={page === 1} onClick={() => setPage(prev => prev - 1)}>
+          Previous
+        </button>
+
+        <span style={{ margin: '0 10px' }}>
+          Page {page} of {totalPages}
+        </span>
+
+        <button disabled={page === totalPages} onClick={() => setPage(prev => prev + 1)}>
+          Next
+        </button>
+      </div>
     </div>
   );
 };
