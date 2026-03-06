@@ -31,6 +31,7 @@ export const StudentsList = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   const [Uploading, setUploading] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
 
   useEffect(() => {
     getCourses().then(setCourses);
@@ -57,6 +58,19 @@ export const StudentsList = () => {
   useEffect(() => {
     fetchStudents();
   }, [page]);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+        setAdminMode(true);
+        alert('Admin mode enabled');
+      }
+    };
+
+    window.addEventListener('keydown', handleKey);
+
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     try {
@@ -271,7 +285,10 @@ export const StudentsList = () => {
                     Edit
                   </button>
                   <button
-                    className="text-sm bg-red-500 hover:bg-red-400 px-3 py-1 rounded-md"
+                    disabled={!adminMode}
+                    className={`text-sm px-3 py-1 rounded-md
+                         ${!adminMode ? 'bg-gray-600 cursor-not-allowed' : 'bg-red-500 hover:bg-red-400'}
+                        `}
                     onClick={() => handleDelete(s.id)}
                   >
                     Delete

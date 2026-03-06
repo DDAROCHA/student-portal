@@ -110,13 +110,13 @@ export const About = () => {
 
           <div className="flex flex-col items-center text-center space-y-3 text-gray-300">
             <div className="bg-slate-900 px-6 py-3 rounded-lg border border-cyan-500/40">
-              React Frontend (CRA)
+              React Frontend (AWS S3)
             </div>
 
             <div className="text-cyan-400">↓</div>
 
             <div className="bg-slate-900 px-6 py-3 rounded-lg border border-green-500/40">
-              Node.js / Express REST API (EC2)
+              Node.js / Express REST API (AWS EC2)
             </div>
 
             <div className="text-cyan-400">↓</div>
