@@ -30,6 +30,8 @@ export const StudentsList = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
+  const [Uploading, setUploading] = useState(false);
+
   useEffect(() => {
     getCourses().then(setCourses);
   }, []);
@@ -43,7 +45,7 @@ export const StudentsList = () => {
   };
 
   const fetchStudents = () => {
-    fetch(`http://localhost:3001/students?page=${page}&limit=5`)
+    fetch(`http://localhost:3001/students?page=${page}&limit=6`)
       .then(res => res.json())
       .then(data => {
         setStudents(data.students);
@@ -57,37 +59,44 @@ export const StudentsList = () => {
   }, [page]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    try {
+      setUploading(true);
+      e.preventDefault();
 
-    let avatarUrl = null;
+      let avatarUrl = null;
 
-    console.log('Selected file:', selectedFile);
+      console.log('Selected file:', selectedFile);
 
-    if (selectedFile) {
-      avatarUrl = await uploadToS3(selectedFile);
+      if (selectedFile) {
+        avatarUrl = await uploadToS3(selectedFile);
+      }
+
+      console.log('Avatar URL:', avatarUrl);
+
+      await fetch('http://localhost:3001/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          avatar_url: avatarUrl,
+        }),
+      });
+
+      setName('');
+      setEmail('');
+      setSelectedFile(null);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      fetchStudents();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUploading(false);
     }
-
-    console.log('Avatar URL:', avatarUrl);
-
-    await fetch('http://localhost:3001/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        email,
-        avatar_url: avatarUrl,
-      }),
-    });
-
-    setName('');
-    setEmail('');
-    setSelectedFile(null);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-
-    fetchStudents();
   };
 
   const handleDelete = async (id: number) => {
@@ -132,9 +141,7 @@ export const StudentsList = () => {
     return fileUrl;
   };
 
-  if (loading) return <p>Loading...</p>;
-
-  //console.log('Courses state:', courses);
+  //if (loading) return <p>Loading...</p>;
 
   return (
     <div className="relative z-10 min-h-screen text-white p-10">
@@ -143,117 +150,195 @@ export const StudentsList = () => {
         Students
       </h1>
 
-      <form onSubmit={handleSubmit}>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-cyan-500/40 shadow-lg mb-10 flex flex-wrap gap-4 items-end"
+      >
         <input
           type="text"
           placeholder="Name"
           value={name}
           onChange={e => setName(e.target.value)}
+          className="bg-slate-900/70 border border-cyan-500/40 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-400"
         />
+
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={e => setEmail(e.target.value)}
+          className="bg-slate-900/70 border border-cyan-500/40 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-400"
         />
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={e => {
-            if (e.target.files) {
-              setSelectedFile(e.target.files[0]);
-            }
-          }}
-        />
-        <button type="submit">Add Student</button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="bg-cyan-600 hover:bg-cyan-500 text-white text-sm px-3 py-1 rounded-lg transition"
+          >
+            Upload Student Picture
+          </button>
+
+          {selectedFile && <span className="text-sm text-gray-300">{selectedFile.name}</span>}
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={e => {
+              if (e.target.files) setSelectedFile(e.target.files[0]);
+            }}
+            className="hidden"
+          />
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className={`px-4 py-2 rounded-lg text-white transition
+                    ${loading ? 'bg-gray-600 cursor-not-allowed' : 'bg-cyan-600 hover:bg-cyan-500'}
+                `}
+        >
+          {Uploading ? 'Adding...' : 'Add Student'}
+        </button>
       </form>
 
-      <ul>
-        {students.map(s => (
-          <li key={s.id} style={{ marginBottom: '20px' }}>
-            {editingId === s.id ? (
-              <>
-                <input value={editName} onChange={e => setEditName(e.target.value)} />
-                <input value={editEmail} onChange={e => setEditEmail(e.target.value)} />
-                <button onClick={() => handleUpdate(s.id)}>Save</button>
-                <button onClick={() => setEditingId(null)}>Cancel</button>
-              </>
-            ) : (
-              <>
-                {s.name} ({s.email})
-                <button
-                  onClick={() => {
-                    setEditingId(s.id);
-                    setEditName(s.name);
-                    setEditEmail(s.email);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {loading ? (
+          <p className="text-gray-400">Loading students...</p>
+        ) : (
+          students.map(s => (
+            <div
+              key={s.id}
+              className="bg-white/5 backdrop-blur-md p-6 rounded-xl border border-cyan-500/40 shadow-lg hover:shadow-cyan-500/30 transition"
+            >
+              {editingId === s.id ? (
+                <>
+                  <div className="flex flex-col gap-2 mb-3">
+                    <input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      className="w-full bg-slate-900/70 border border-cyan-500/40 rounded-lg px-3 py-1 text-white focus:outline-none focus:border-cyan-400"
+                    />
+
+                    <input
+                      value={editEmail}
+                      onChange={e => setEditEmail(e.target.value)}
+                      className="w-full bg-slate-900/70 border border-cyan-500/40 rounded-lg px-3 py-1 text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                  <button
+                    className="bg-green-500 hover:bg-green-400 px-3 py-1 rounded-md mr-2"
+                    onClick={() => handleUpdate(s.id)}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="bg-gray-500 hover:bg-gray-400 px-3 py-1 rounded-md"
+                    onClick={() => setEditingId(null)}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-4 mb-4">
+                    {s.avatar_url ? (
+                      <img
+                        src={s.avatar_url}
+                        alt={s.name}
+                        className="w-14 h-14 rounded-full object-cover border-2 border-cyan-400 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-full bg-slate-700 flex items-center justify-center text-lg font-bold">
+                        {s.name.charAt(0)}
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="text-lg font-semibold text-white">{s.name}</p>
+                      <p className="text-sm text-gray-400">{s.email}</p>
+                    </div>
+                  </div>
+                  <button
+                    className="text-sm bg-cyan-500 hover:bg-cyan-400 text-black px-3 py-1 rounded-md mr-2"
+                    onClick={() => {
+                      setEditingId(s.id);
+                      setEditName(s.name);
+                      setEditEmail(s.email);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="text-sm bg-red-500 hover:bg-red-400 px-3 py-1 rounded-md"
+                    onClick={() => handleDelete(s.id)}
+                  >
+                    Delete
+                  </button>
+                </>
+              )}
+
+              {/* 🔽 SECCIÓN DE CURSOS */}
+              <div style={{ marginTop: '10px' }}>
+                <select
+                  className="bg-slate-900 border border-cyan-500/40 text-white rounded-lg px-3 py-1 mt-3"
+                  onChange={async e => {
+                    const courseId = Number(e.target.value);
+                    console.log('Asignando curso:', courseId);
+
+                    if (!courseId) return;
+
+                    const response = await assignCourseToStudent(s.id, courseId);
+                    console.log('Respuesta del backend:', response);
+
+                    await loadStudentCourses(s.id);
                   }}
                 >
-                  Edit
+                  <option value="">Assign Courses</option>
+                  {courses.map(course => (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  onClick={() => loadStudentCourses(s.id)}
+                  className="mt-2 px-3 py-1 text-sm border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-white rounded-lg transition"
+                >
+                  View Courses
                 </button>
-                <button onClick={() => handleDelete(s.id)}>Delete</button>
-                {s.avatar_url && (
-                  <img
-                    src={s.avatar_url}
-                    alt={s.name}
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      marginRight: 10,
-                    }}
-                  />
-                )}
-              </>
-            )}
 
-            {/* 🔽 SECCIÓN DE CURSOS */}
-            <div style={{ marginTop: '10px' }}>
-              <select
-                onChange={async e => {
-                  const courseId = Number(e.target.value);
-                  console.log('Asignando curso:', courseId);
-
-                  if (!courseId) return;
-
-                  const response = await assignCourseToStudent(s.id, courseId);
-                  console.log('Respuesta del backend:', response);
-
-                  await loadStudentCourses(s.id);
-                }}
-              >
-                <option value="">Asignar curso</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.name}
-                  </option>
-                ))}
-              </select>
-
-              <button onClick={() => loadStudentCourses(s.id)}>Ver cursos</button>
-
-              <ul>
-                {studentCourses[s.id]?.map(course => (
-                  <li key={course.id}>{course.name}</li>
-                ))}
-              </ul>
+                <ul className="mt-2 text-sm text-gray-300 space-y-1 list-disc list-inside">
+                  {studentCourses[s.id]?.map(course => (
+                    <li key={course.id}>{course.name}</li>
+                  ))}
+                </ul>
+              </div>
             </div>
-          </li>
-        ))}
-      </ul>
+          ))
+        )}
+      </div>
 
-      <div style={{ marginTop: '20px' }}>
-        <button disabled={page === 1} onClick={() => setPage(prev => prev - 1)}>
+      <div className="flex justify-center items-center gap-6 mt-10">
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(prev => prev - 1)}
+          className="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg disabled:opacity-40"
+        >
           Previous
         </button>
 
-        <span style={{ margin: '0 10px' }}>
+        <span className="text-gray-300">
           Page {page} of {totalPages}
         </span>
 
-        <button disabled={page === totalPages} onClick={() => setPage(prev => prev + 1)}>
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(prev => prev + 1)}
+          className="bg-slate-800 hover:bg-slate-700 px-4 py-2 rounded-lg disabled:opacity-40"
+        >
           Next
         </button>
       </div>

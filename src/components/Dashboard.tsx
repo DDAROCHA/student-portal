@@ -116,7 +116,7 @@ export const Dashboard = () => {
                   data={courseData}
                   dataKey="value"
                   nameKey="name"
-                  cx="50%"
+                  cx="65%"
                   cy="50%"
                   outerRadius={130}
                   innerRadius={75}
@@ -134,33 +134,44 @@ export const Dashboard = () => {
                 </Pie>
 
                 <Tooltip
-                  formatter={value => [`${value} students`, 'Enrolled']}
+                  formatter={(value?: number, name?: string) => [
+                    `${value ?? 0} ${value === 1 ? 'student' : 'students'}`,
+                    name ?? 'Course',
+                  ]}
                   contentStyle={{
-                    background: '#020617',
+                    backgroundColor: '#020617',
                     border: '1px solid #22d3ee',
                     borderRadius: '10px',
-                    color: 'white',
+                  }}
+                  labelStyle={{
+                    color: '#22d3ee',
+                  }}
+                  itemStyle={{
+                    color: '#22d3ee',
                   }}
                 />
 
                 <Legend
-                  verticalAlign="bottom"
+                  layout="vertical"
+                  verticalAlign="middle"
+                  align="right"
                   iconType="circle"
                   wrapperStyle={{
                     color: '#cbd5f5',
-                    paddingTop: '20px',
+                    paddingLeft: '20px',
                   }}
                 />
               </PieChart>
             </ResponsiveContainer>
 
-            {/* CENTER TOTAL */}
+            {/* TOTAL BELOW DONUT */}
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <p className="text-4xl font-bold text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]">
+            <div className="absolute bottom-4 left-0 w-full flex items-center justify-center gap-2 pointer-events-none">
+              <span className="text-3xl font-bold text-cyan-400 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)]">
                 {courseData.reduce((acc, cur) => acc + cur.value, 0)}
-              </p>
-              <p className="text-sm text-gray-400">Total Students</p>
+              </span>
+
+              <span className="text-sm text-gray-400">Total Students</span>
             </div>
           </motion.div>
         </div>
