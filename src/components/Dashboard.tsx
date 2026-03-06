@@ -8,6 +8,8 @@ import { ParticlesBackground } from './ParticlesBackground';
 
 const COLORS = ['#22d3ee', '#ec4899', '#22c55e', '#facc15', '#8b5cf6'];
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 interface Stats {
   totalStudents: number;
   totalCourses: number;
@@ -34,11 +36,11 @@ export const Dashboard = () => {
   const [courseData, setCourseData] = useState<CourseStat[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/dashboard')
+    fetch(`${API_URL}/dashboard`)
       .then(res => res.json())
       .then(data => setStats(data));
 
-    fetch('http://localhost:3001/stats/students-per-course')
+    fetch(`${API_URL}/stats/students-per-course`)
       .then(res => res.json())
       .then(data => {
         setCourseData(data);

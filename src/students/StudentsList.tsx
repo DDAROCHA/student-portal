@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { getCourses, getStudentCourses, assignCourseToStudent } from '../services/courseService';
 import { ParticlesBackground } from '../components/ParticlesBackground';
 
+const API_URL = process.env.REACT_APP_API_URL;
+
 interface Student {
   id: number;
   name: string;
@@ -46,7 +48,7 @@ export const StudentsList = () => {
   };
 
   const fetchStudents = () => {
-    fetch(`http://localhost:3001/students?page=${page}&limit=6`)
+    fetch(`${API_URL}/students?page=${page}&limit=6`)
       .then(res => res.json())
       .then(data => {
         setStudents(data.students);
@@ -87,7 +89,7 @@ export const StudentsList = () => {
 
       console.log('Avatar URL:', avatarUrl);
 
-      await fetch('http://localhost:3001/students', {
+      await fetch(`${API_URL}/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -114,7 +116,7 @@ export const StudentsList = () => {
   };
 
   const handleDelete = async (id: number) => {
-    await fetch(`http://localhost:3001/students/${id}`, {
+    await fetch(`${API_URL}/students/${id}`, {
       method: 'DELETE',
     });
 
@@ -122,7 +124,7 @@ export const StudentsList = () => {
   };
 
   const handleUpdate = async (id: number) => {
-    await fetch(`http://localhost:3001/students/${id}`, {
+    await fetch(`${API_URL}/students/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -139,7 +141,7 @@ export const StudentsList = () => {
 
   const uploadToS3 = async (file: File) => {
     const res = await fetch(
-      `http://localhost:3001/students/upload-url?fileName=${file.name}&fileType=${file.type}`
+      `${API_URL}/students/upload-url?fileName=${file.name}&fileType=${file.type}`
     );
 
     const { uploadUrl, fileUrl } = await res.json();
